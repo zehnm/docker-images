@@ -301,7 +301,9 @@ class SOA12212Provisioner:
 
 
     def extendOsbDomain(self, domainHome, db, dbPrefix, dbPassword,domainType):
-        self.readAndApplyJRFTemplates(domainHome)
+        # only apply template if it's a true OSB domain. In a shared domain it has already been applied
+        if domainType != "soaosb":
+            self.readAndApplyJRFTemplates(domainHome)
 
         print 'INFO: Applying OSB templates...'
         for extensionTemplate in self.OSB_12212_TEMPLATES['extensionTemplates']:

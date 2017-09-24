@@ -240,6 +240,15 @@ echo "password="$ADMIN_PASSWORD >> $DOMAIN_HOME/servers/AdminServer/security/boo
 echo "username=weblogic" > $DOMAIN_HOME/servers/${MANAGED_SERVER}/security/boot.properties
 echo "password="$ADMIN_PASSWORD >> $DOMAIN_HOME/servers/${MANAGED_SERVER}/security/boot.properties
 
+# Quick fix for soaosb domain: copy boot.properties from SOA domain.
+# The osb managed server name should be passed as environment variable BUT the called createDomain.py script also has all server names hard coded... 
+if [ "$DOMAIN_TYPE" = "soaosb" ]
+then
+  MANAGED_SERVER2=osb_server1
+  mkdir -p $DOMAIN_HOME/servers/${MANAGED_SERVER2}/security
+  cp $DOMAIN_HOME/servers/${MANAGED_SERVER}/security/boot.properties $DOMAIN_HOME/servers/${MANAGED_SERVER2}/security
+fi
+
 #
 # Setting env variables
 #=======================
