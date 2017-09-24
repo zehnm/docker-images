@@ -57,8 +57,10 @@ else
 fi
 
 LOGDIR=${DOMAIN_HOME}/logs
-LOGFILE=${LOGDIR}/ms.log
+# use managed server name in log and status file name. There are multiple servers if we are running a soaosb domain!
+LOGFILE=${LOGDIR}/${MANAGED_SERVER}.log
 mkdir -p ${LOGDIR}
+rm -f ${LOGDIR}/${MANAGED_SERVER}.status
 
 export thehost=`hostname -I`
 echo "INFO: Updating the listen address - ${thehost} ${ADMIN_HOST}"
@@ -69,7 +71,7 @@ echo "INFO: Starting the managed server ${MANAGED_SERVER}"
 $DOMAIN_HOME/bin/startManagedWebLogic.sh ${MANAGED_SERVER} "http://"${ADMIN_HOST}:${ADMIN_PORT} > ${LOGFILE} 2>&1 &
 statusfile=/tmp/notifyfifo.$$
 
-echo "INFO: Waiting for the Managed Server to accept requests..."
+echo "INFO: Waiting for the Managed Server ${MANAGED_SERVER} to accept requests..."
 rm -f "${statusfile}"
 mkfifo "${statusfile}" || exit 1
 {
@@ -86,15 +88,15 @@ mkfifo "${statusfile}" || exit 1
 } | {
   grep -m 1 "${grepPat}"
   # notify the first pipeline stage that grep is done
-  echo "RUNNING"> ${LOGDIR}/ms.status
-  echo "INFO: Managed Server is running"
+  echo "RUNNING"> ${LOGDIR}/${MANAGED_SERVER}.status
+  echo "INFO: Managed Server ${MANAGED_SERVER} is running"
   echo >${statusfile}
 }
 
 # clean up
 rm -f "${statusfile}"
-if [ -f ${LOGDIR}/ms.status ]; then
-  echo "INFO: Managed server has been started"
+if [ -f ${LOGDIR}/${MANAGED_SERVER}.status ]; then
+  echo "INFO: Managed server ${MANAGED_SERVER} has been started"
 fi
 
 childPID=$!
