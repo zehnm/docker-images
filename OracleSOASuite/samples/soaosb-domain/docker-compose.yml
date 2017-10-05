@@ -1,0 +1,99 @@
+version: "2.0"
+
+services:
+  #
+  # The Oracle DB Definition
+  #
+  soadb:
+    image: oracle/database:12.1.0.2-ee
+    ports:
+      - "${DC_ORCL_PORT}:1521"
+      - "${DC_ORCL_OEM_PORT}:5500"
+    environment:
+      - ORACLE_SID=${DC_ORCL_SID}
+      - ORACLE_PDB=${DC_ORCL_PDB}
+      - ORACLE_PWD=${DC_ORCL_SYSPWD}
+      - ORACLE_CHARACTERSET=AL32UTF8
+    container_name: soadb
+    volumes:
+      - ${DC_ORCL_DBDATA}:/opt/oracle/oradata
+
+  #
+  # The SOA Admin Server
+  #
+  soaosbas:
+    image: ${DC_REGISTRY_SOA}/oracle/soasuite:${DC_SOA_VERSION}
+    container_name: soaosbas
+    command: /bin/bash -c "sleep 5s; /u01/oracle/dockertools/createDomainAndStart.sh"
+    ports:
+      - "7001:7001"
+    environment:
+      - DOMAIN_TYPE=soaosb
+      #- ADMIN_HOST=soaosbas
+      - ADMIN_HOST=${DC_HOSTNAME}
+      - ADMIN_PASSWORD=${DC_ADMIN_PWD}
+      - CONNECTION_STRING=soadb:1521/${DC_ORCL_PDB}
+      - DB_PASSWORD=${DC_ORCL_SYSPWD}
+      - DB_SCHEMA_PASSWORD=${DC_RCU_SCHPWD}
+      - RCUPREFIX=${DC_RCU_SOAPFX}
+      - MANAGED_SERVER=soa_server1
+    volumes:
+      - ${DC_DDIR_SOA}:/u01/oracle/user_projects
+
+  #
+  # The SOA Managed Server
+  #
+  soams:
+    image: ${DC_REGISTRY_SOA}/oracle/soasuite:${DC_SOA_VERSION}
+    container_name: soams
+    depends_on:
+      - "soaosbas"
+    command: /bin/bash -c "/u01/oracle/dockertools/startMS.sh"
+    ports:
+      - "8001:8001"
+      - "8002:8002"
+    environment:
+      - DOMAIN_TYPE=soa
+      #- ADMIN_HOST=soaosbas
+      - ADMIN_HOST=${DC_HOSTNAME}
+      - ADMIN_PORT=7001
+      - MANAGED_SERVER=soa_server1
+    volumes:
+      - ${DC_DDIR_SOA}:/u01/oracle/user_projects
+
+  #
+  # The OSB Managed Server
+  #
+  osbms:
+    image: ${DC_REGISTRY_SOA}/oracle/soasuite:${DC_SOA_VERSION}
+    container_name: osbms
+    depends_on:
+      - "soaosbas"
+    command: /bin/bash -c "/u01/oracle/dockertools/startMS.sh"
+    ports:
+      - "9001:9001"
+      - "9002:9002"
+    environment:
+      - DOMAIN_TYPE=osb
+      #- ADMIN_HOST=soaosbas
+      - ADMIN_HOST=${DC_HOSTNAME}
+      - ADMIN_PORT=7001
+      - MANAGED_SERVER=osb_server1
+    volumes:
+      - ${DC_DDIR_SOA}:/u01/oracle/user_projects
+
+  #
+  # The Coherence storage node
+  #
+  coherence:
+    image: ${DC_REGISTRY_SOA}/oracle/soasuite:${DC_SOA_VERSION}
+    container_name: coherence
+    depends_on:
+      - "soadb"
+    command: /bin/bash -c "/u01/oracle/user_projects/domains/InfraDomain/bin/startCoherence.sh"
+    ports:
+      - "7801:7801"
+    #environment:
+    volumes:
+      - ${DC_DDIR_SOA}:/u01/oracle/user_projects
+
