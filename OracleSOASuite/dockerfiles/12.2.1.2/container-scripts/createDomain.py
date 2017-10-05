@@ -271,6 +271,8 @@ class SOA12212Provisioner:
         return
 
     def extendSoaDomain(self, domainHome, db, dbPrefix, dbPassword):
+        print 'INFO: Start extending SOA domain... '
+
         self.readAndApplyJRFTemplates(domainHome)
         self.applySOATemplates()
 
@@ -301,9 +303,12 @@ class SOA12212Provisioner:
 
 
     def extendOsbDomain(self, domainHome, db, dbPrefix, dbPassword,domainType):
+        print 'INFO: Start extending OSB domain... '
         # only apply template if it's a true OSB domain. In a shared domain it has already been applied
         if domainType != "soaosb":
             self.readAndApplyJRFTemplates(domainHome)
+        else:
+            readDomain(domainHome)
 
         print 'INFO: Applying OSB templates...'
         for extensionTemplate in self.OSB_12212_TEMPLATES['extensionTemplates']:
